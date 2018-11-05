@@ -1,6 +1,6 @@
 import os, sys, subprocess, re
 
-input_file = sys.argv[1]
+input_file = sys.argv[1] #MYH7_and_paralogues_tableized.txt
 output_file = input_file.rsplit(".", 1)[0]+".out"
 
 # pdb_file = sys.argv[2]
@@ -19,9 +19,9 @@ with open(input_file, "r") as f:
 			print(AA)
 			if (
 				len(AA) == 2 and 
-				not "-" in pos and
-				int(pos) >= 1590 and
-				int(pos) <= 1657
+				not "-" in pos #and
+				# int(pos) >= 1590 and
+				# int(pos) <= 1657
 				):
 				MYH7list.append(pos)
 
