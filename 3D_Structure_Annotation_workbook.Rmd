@@ -1,0 +1,310 @@
+---
+title: "Further applications of Paralog Annotation"
+# output: rmarkdown::github_document
+output: 
+
+  # word_document:
+  #  reference_docx: template.docx
+
+  pdf_document:
+    toc: true
+    number_sections: true
+    fig_caption: yes
+    
+editor_options: 
+  chunk_output_type: inline
+bibliography: bibliography.bib
+always_allow_html: yes
+---
+
+<!--Load Packages and function-->
+<!-- ```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE, results='hide'} -->
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide',include=FALSE}
+Packages = c("tidyverse", "plyr", "dplyr", "httr", "jsonlite","XML")
+new.packages = Packages[!(Packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages, repos = "https://cran.ma.imperial.ac.uk/")
+# lapply(Packages, library, character.only = TRUE)
+library("plyr")
+library("dplyr")
+library("tidyverse")
+library("httr")
+library("jsonlite")
+library("XML")
+Packages = c("ggplot2", "ggsignif", "knitr", "png", "grid", "tinytex", "pander", "kableExtra", "DiagrammeR")
+new.packages = Packages[!(Packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages, repos = "https://cran.ma.imperial.ac.uk/")
+lapply(Packages, library, character.only = TRUE)
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+bioconductor_Packages = c("biomaRt", "clusterProfiler", "org.Hs.eg.db")
+new.packages = bioconductor_Packages[!(bioconductor_Packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) BiocManager::install(new.packages)
+lapply(bioconductor_Packages, library, character.only = TRUE)
+```
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.pos = 'H')
+```
+\newpage
+# To do list
+
+
+# Introduction
+
+# Material and Methods
+
+## Datasets
+Variants with CLNSIG=Pathogenic, CLNSIG=Likely_pathogenic, CLNSIG=Pathogenic/Likely_pathogenic grepped out of clinvar_20190114_GRCh37.vcf
+Note there are a few variants present in GRCh38 but not in GRCh37 build. Take only missense.
+
+```{r, cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE}
+xB = read.csv("/media/nick/Data/PhD/Paralogues/ParalogueAnnotation_personal/data/clinvar/clinvar_20190114_GRCh38_onlyBenign_and_Likely_benign.vcf", sep = "\t", stringsAsFactors = F, header = F, comment.char = "#")
+yB = read.csv("/media/nick/Data/PhD/Pfams/Pfam_meta_domains/data/clinvar/clinvar_20190114/clinvar_20190114_GRCh37_onlyBenign_and_Likely_benign.vcf", sep = "\t", stringsAsFactors = F, header = F, comment.char = "#")
+xB1 = xB[grepl("missense_variant",xB$V8),]
+yB1 = yB[grepl("missense_variant",yB$V8),]
+dif_id = setdiff(xB1$V3, yB1$V3)
+
+xP = read.csv("/media/nick/Data/PhD/Paralogues/ParalogueAnnotation_personal/data/clinvar/clinvar_20190114_GRCh38_onlyPathogenic_and_Likely_pathogenic.vcf", sep = "\t", stringsAsFactors = F, header = F, comment.char = "#")
+yP = read.csv("/media/nick/Data/PhD/Pfams/Pfam_meta_domains/data/clinvar/clinvar_20190114/clinvar_20190114_GRCh37_onlyPathogenic_and_Likely_pathogenic.vcf", sep = "\t", stringsAsFactors = F, header = F, comment.char = "#")
+xP1 = xP[grepl("missense_variant",xP$V8),]
+yP1 = yP[grepl("missense_variant",yP$V8),]
+dif_id = setdiff(xP1$V3, yP1$V3)
+```
+
+For all missense synthetic exome run on HPC, used qsub_scripts:
+```{r eval = FALSE}
+#after each run CHECK with bash command in USEFUL CODE TIPS in Paralog_annotation.Rmd
+
+#Input files located in /rds/general/project/lms-ware-analysis/live/nick/RBH-work/Paralog_Anno/data_files/all_possible_mutation/synthetic_exome/synthetic_exome_GRCh37_renamed/
+#Plan is to run tableize for pfam analysis on the .out_paraloc files and go from there.
+
+HPC_run_chrom1 = data.frame(
+  file = c(
+"0-50",
+"50-99",
+"100-360"
+),
+done = c(1,0,0)
+)
+
+HPC_run_chrom2 = data.frame(
+  file = c(
+"0-9",
+"10-99", #93 had warnings
+"100-263"
+),
+done = c(0,0,0)
+)
+
+HPC_run_chrom3 = data.frame(
+  file = c(
+"0-9",
+"10-99",
+"100-204"
+),
+done = c(0,0,0)
+)
+
+HPC_run_chrom4 = data.frame(
+  file = c(
+"0-9",
+"10-99",
+"100-139"
+),
+done = c(0,0,0)
+)
+
+HPC_run_chrom5 = data.frame(
+  file = c(
+"0-9",
+"10-99", 
+"100-159"
+),
+done = c(0,0,0)
+)
+
+HPC_run_chrom6 = data.frame(
+  file = c(
+"0-9",
+"10-99", 
+"100-179"
+),
+done = c(0,0,0)
+)
+
+HPC_run_chrom7 = data.frame(
+  file = c(
+"0-9",
+"10-99",
+"100-172"
+),
+done = c(0,0,0)
+)
+
+HPC_run_chrom8 = data.frame(
+  file = c(
+"0-9",
+"10-99",
+"100-123"
+),
+done = c(0,0,0)
+)
+
+HPC_run_chrom9 = data.frame(
+  file = c(
+"0-9",
+"10-99",
+"100-144"
+),
+done = c(0,0,0)
+)
+
+HPC_run_chromY = data.frame(
+  file = c(
+"0-11"
+),
+done = c(1)
+)
+```
+
+
+
+## Annotation of variants and transfer of annotations across homologous pfam positions
+
+The easiest thing to do first is to run VEP to annotate variant with protein and codon info and then run tableize for easy info extraction
+
+e.g. Run VEP:
+```{bash eval = FALSE, include = TRUE}
+#PBS -lwalltime=72:0:0
+#PBS -lselect=1:ncpus=1:mem=16gb
+
+module load anaconda3/personal
+source /home/nyl112/.bashrc
+
+/home/nyl112/perl5/perlbrew/bin/perlbrew switch perl-5.22.0
+
+perl /work/nyl112/ensembl-vep/vep --force_overwrite --vcf --allele_number --canonical --offline --cache --dir_cache /work/nyl112/ -assembly GRCh37 --port 3337 -i /work/nyl112/Pfams/Pfam_meta_domains/data/clinvar/clinvar_20190114/clinvar_20190114_GRCh37_onlyPathogenic_and_Likely_pathogenic.vcf -o /work/nyl112/Pfams/Pfam_meta_domains/data/clinvar/clinvar_20190114/clinvar_20190114_GRCh37_onlyPathogenic_and_Likely_pathogenic.out_no_plugin
+```
+
+
+e.g. Run tableize:
+```{bash eval = FALSE, include = TRUE}
+#PBS -lwalltime=72:0:0
+#PBS -lselect=1:ncpus=1:mem=5gb
+
+module load anaconda3/personal
+source /home/nyl112/.bashrc
+
+python2 /work/nyl112/loftee/src/tableize_vcf.py --vcf /work/nyl112/Pfams/Pfam_meta_domains/data/clinvar/clinvar_20190114/clinvar_20190114_GRCh37_onlyPathogenic_and_Likely_pathogenic.out_no_plugin --out /work/nyl112/Pfams/Pfam_meta_domains/data/clinvar/clinvar_20190114/clinvar_20190114_GRCh37_onlyPathogenic_and_Likely_pathogenic.out_no_plugin_tableized_org --do_not_minrep --include_id --vep_info SYMBOL,Protein_position,Amino_acids,Codons,BIOTYPE --split_by_transcript --canonical_only
+
+python2 /work/nyl112/loftee/src/tableize_vcf.py --vcf /work/nyl112/Pfams/Pfam_meta_domains/data/clinvar/clinvar_20190114/clinvar_20190114_GRCh37_onlyBenign_and_Likely_benign.out_no_plugin --out /work/nyl112/Pfams/Pfam_meta_domains/data/clinvar/clinvar_20190114/clinvar_20190114_GRCh37_onlyBenign_and_Likely_benign.out_no_plugin_tableized_org --do_not_minrep --include_id --vep_info SYMBOL,Protein_position,Amino_acids,Codons,BIOTYPE --split_by_transcript --canonical_only
+```
+
+
+## Statistical measures
+For a pathogenic paralogue alignment:
+
+true positive (TP) = pathogenic query variant with a paralogous pathogenic hit;
+
+false positive (FP) = benign query variant with a paralogous pathogenic hit;
+
+false negative (FN) = pathogenic query variant with no paralogous pathogenic hit;
+
+and true negative (TN) = benign query variant with no paralogous pathogenic hit.\newline
+
+
+Likewise for a benign paralogous alignment:
+
+TP = benign query variant with a paralogous benign hit; 
+
+FP = pathogenic query variant with a paralogous benign hit; 
+
+FN = benign query variant with no paralogous benign hit; 
+
+and TN = pathogenic query variant with no paralogous benign hit.\newline
+
+Positive Predictive Values (PPV) and Sensitivties are therefore calculated by:
+
+$$PPV = \frac{TP}{TP+FP}$$
+$$Sensitivity = \frac{TP}{TP+FN}$$
+
+P values are calculated via a Fisher's exact test on a 2x2 contingency table tabulating the number of pathogenic and benign variants of interest and how many of those are predicted as pathogenic or benign.
+
+## Calculation of Etiological Fractions
+
+Odds ratios (OR) are calculated by:
+
+$$ OR =  \frac{(a/b)}{(c/d)} $$
+
+where:
+
+$a =$ number of variants predicted to be pathogenic by paralogue annotation in the diseased cohort
+
+$b =$ number of varaints predicted to be pathogenic by paralogue annotation in the control cohort
+
+$c =$ number of variants not predicted to be pathogenic by paralogue annotation in the diseased cohort
+
+$d =$ number of variants not predicted to be pathogenic by paralogue annotation in the control cohort
+
+and the 95% confidence intervals for OR values are calculated according to @altman1991practical via:
+
+$$ 95\% \ CI = [e^{\ln(OR) - 1.96 \cdot SE(\ln(OR))},e^{\ln(OR) + 1.96 \cdot SE(\ln(OR))}] $$
+where:
+
+$$ SE(\ln(OR)) =  \sqrt{\frac{1}{a}+\frac{1}{b}+\frac{1}{c}+\frac{1}{d}} $$
+
+Etiological Fractions (EF) can then be calculated by:
+
+$$ EF = \frac{OR - 1}{OR} $$
+and the 95% confidence intervals for EF values are calculated according to @hildebrandt2006calculating via:
+
+$$ 95\% \ CI = [\widehat{EF} - z_{1-\frac{a}{2}} \sqrt{\widehat{VAR}(\widehat{\Phi})}, \ min( \widehat{EF} + z_{1-\frac{a}{2}} \sqrt{\widehat{VAR}(\widehat{\Phi})}, \ 1)]  $$
+where the asymptomatic variance estimator of $\widehat{\Phi}$ is given by:
+
+$$ \widehat{VAR}(\widehat{\Phi}) = \widehat{\Phi}^2 [\frac{1-\widehat{\pi}_{0}}{N_0\widehat{\pi}_{0}}+\frac{1-\widehat{\pi}_{1}}{N_1\widehat{\pi}_{1}}]$$
+and:
+$\widehat{\pi}_{1} = a/(b + a)$
+$\widehat{\pi}_{0} = c/(d + c)$ 
+$N_0 = c + d$ 
+$N_1 = a + b$ 
+$\widehat{\Phi}^2 = (\widehat{\pi}_{0}/\widehat{\pi}_{1})^2$
+
+NOTE ACCORDING TO https://www.medcalc.org/calc/odds_ratio.php - "Where zeros cause problems with computation of the odds ratio or its standard error, 0.5 is added to all cells (a, b, c, d) (Pagano & Gauvreau, 2000; Deeks & Higgins, 2010)."
+
+## Paralogue stats
+The additional statistics were calculated by programmatically extracting the genes of interest (using `src/check_what_clinvar_genes.py` and `src/Find_unique_genes.py`) and then retrieving relevant information manually from [Ensembl's Bioimart](https://www.ensembl.org/biomart)
+
+Alternatively, this can be reproduced using biomaRt package
+                 
+## Comparison to SIFT/REVEL scores
+SIFT and Mcap scores were retreived using ANNOVAR with dbnsfp30a [@wang2010annovar,@liu2016dbnsfp]. Revel scores were downloaded from https://sites.google.com/site/revelgenomics/downloads [@ioannidis2016revel].
+
+Revel did not provide scores for all available variants in the dataset and therefore to ensure the same variants were being annotated by all tools
+
+# Results and Discussion
+
+## Analyzing distances between closest points
+```{r cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+P.distances = read.csv("Structures/Phyre_SCN5A_aligned_with_Phyre_SCN2A.prb.P_LP_distance_calculated_out", sep = ",", header = FALSE, stringsAsFactors = FALSE)
+P.distances$V4 = paste(P.distances$V1, P.distances$V2, sep = " ")
+P.distances$V5 = "Pathogenic"
+B.distances = read.csv("Structures/Phyre_SCN5A_aligned_with_Phyre_SCN2A.prb.B_LB_distance_calculated_out", sep = ",", header = FALSE, stringsAsFactors = FALSE)
+B.distances$V4 = paste(B.distances$V1, B.distances$V2, sep = " ")
+B.distances$V5 = "Benign"
+
+All.distances = rbind(P.distances, B.distances)
+
+plot = ggplot(All.distances, aes(x=V5, y=V3, color=V5)) + geom_violin() + geom_boxplot() + geom_jitter() + theme(axis.text.x=element_blank(), axis.ticks = element_blank()) + ylab("Distance (Angstrom)") +xlab("Variant Clinical Significance")
+```
+
+
+# References
+
+
+
+
+
+
+
+
+
+
