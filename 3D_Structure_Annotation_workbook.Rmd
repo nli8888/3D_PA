@@ -287,13 +287,50 @@ Revel did not provide scores for all available variants in the dataset and there
 P.distances = read.csv("Structures/Phyre_SCN5A_aligned_with_Phyre_SCN2A.prb.P_LP_distance_calculated_out", sep = ",", header = FALSE, stringsAsFactors = FALSE)
 P.distances$V4 = paste(P.distances$V1, P.distances$V2, sep = " ")
 P.distances$V5 = "Pathogenic"
+colnames(P.distances) = c("Query_variant", "Ref_variant", "Distance", "Query_Ref", "Diseased")
+P.distances$Query_protein_position = sapply(str_split(P.distances$Query_variant, " "), tail, n=1L) 
+
 B.distances = read.csv("Structures/Phyre_SCN5A_aligned_with_Phyre_SCN2A.prb.B_LB_distance_calculated_out", sep = ",", header = FALSE, stringsAsFactors = FALSE)
 B.distances$V4 = paste(B.distances$V1, B.distances$V2, sep = " ")
 B.distances$V5 = "Benign"
+colnames(B.distances) = c("Query_variant", "Ref_variant", "Distance", "Query_Ref", "Diseased")
+B.distances$Query_protein_position = sapply(str_split(B.distances$Query_variant, " "), tail, n=1L) 
 
 All.distances = rbind(P.distances, B.distances)
 
-plot = ggplot(All.distances, aes(x=V5, y=V3, color=V5)) + geom_violin() + geom_boxplot() + geom_jitter() + theme(axis.text.x=element_blank(), axis.ticks = element_blank()) + ylab("Distance (Angstrom)") +xlab("Variant Clinical Significance")
+#### Pfams ####
+##P/LP##
+p.Unique_variant_gene_annotations = NULL
+p.Unique_input_variants = NULL
+files = list.files(path="/media/nick/821ED5711ED55F2B/Users/Nick/Documents/PhD/Pfams/Pfam_meta_domains/data/clinvar/clinvar_20190114/RData_objects/P_LP", pattern="*.RData", full.names=TRUE, recursive=FALSE)
+for (i in files){
+  print(i)
+  load(i)
+  if (is.null(p.Unique_variant_gene_annotations)){
+    p.Unique_variant_gene_annotations = Total_annotations$Unique_variant_homologous_annotations
+  } else {
+  p.Unique_variant_gene_annotations = base::rbind(p.Unique_variant_gene_annotations, dplyr::setdiff(Total_annotations$Unique_variant_homologous_annotations, p.Unique_variant_gene_annotations))
+  }
+  if (is.null(p.Unique_input_variants)){
+    p.Unique_input_variants = Total_annotations$input_variants
+  } else {
+    p.Unique_input_variants = base::rbind(p.Unique_input_variants, dplyr::setdiff(Total_annotations$input_variants, p.Unique_input_variants))
+  }
+}
+
+SCN5A_p.Unique_variant_gene_annotations = sort(unique(p.Unique_variant_gene_annotations[p.Unique_variant_gene_annotations$Gene == "SCN5A","Protein_position.x"]))
+Not_annotated = P.distances[!(P.distances$Query_protein_position %in% SCN5A_p.Unique_variant_gene_annotations),]
+Not_annotated$Diseased = "Pathogenic (missed by PA)"
+All.distances = rbind(All.distances, Not_annotated)
+All.distances$Diseased = factor(All.distances$Diseased, levels = c("Benign", "Pathogenic", "Pathogenic (missed by PA)"))
+
+plot = ggplot(All.distances, aes(x=Diseased, y=Distance, color=Diseased)) + 
+  # geom_violin(trim = FALSE, scale = "count") + 
+  # geom_boxplot() +
+  # scale_fill_manual(values = c("P/LP"="#F8CECC", "B/LB"="#D5E8D4")) +
+  scale_color_manual(values = c("Pathogenic"="#B85450", "Benign"="#82B366", "Pathogenic (missed by PA)" = "#0084ff")) +
+  geom_jitter(width = 0.2, alpha = 0.5) + theme(axis.text.x=element_blank(), axis.ticks = element_blank()) + ylab("Distance (Angstrom)") +xlab("Variants") + theme(legend.title = element_blank())
+ggsave("images/Closest_variant_annotation.png")
 ```
 
 
