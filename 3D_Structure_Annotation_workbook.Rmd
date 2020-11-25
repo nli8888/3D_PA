@@ -281,20 +281,52 @@ SIFT and Mcap scores were retreived using ANNOVAR with dbnsfp30a [@wang2010annov
 Revel did not provide scores for all available variants in the dataset and therefore to ensure the same variants were being annotated by all tools
 
 # Results and Discussion
+## PDB stats
+```{r cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+stats = read.csv("Data_Export_Growth.csv", stringsAsFactors = F, header = T)
+stats = stats[order(stats$Year),]
+
+cols = c( "Released structures" = "red", "Total entries" = "blue")
+
+plot = ggplot(stats, aes(x=Year)) + 
+  geom_line(aes(y=Total.Number.of.Entries.Available, color = "Total entries")) +
+  geom_line(aes(y=Number.of.Structures.Released.Annually, color = "Released structures")) + 
+  scale_color_manual(values = cols, guide = guide_legend(reverse = TRUE)) + 
+  theme(aspect.ratio = 2/1,
+        legend.title = element_blank(),
+        # legend.key.size = unit(5,"line"),
+        # legend.position = c(0.77,0.89),
+        legend.text = element_text(size=14),
+        axis.text = element_text(size=14),
+        axis.text.x = element_text(colour = "black"),
+        axis.title.y = element_text(size=20),
+        axis.title.x = element_text(size=20)) +
+  # labs(color = "Legend") +
+  # theme(axis.text.x=element_blank(), axis.ticks = element_blank()) + 
+  ylab("Number of Entries") +xlab("Year") 
+  # theme(legend.title = element_blank())
+ggsave("images/PDB_stats.png")
+```
+
+
 
 ## Analyzing distances between closest points
 ```{r cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 P.distances = read.csv("Structures/Phyre_SCN5A_aligned_with_Phyre_SCN2A.prb.P_LP_distance_calculated_out", sep = ",", header = FALSE, stringsAsFactors = FALSE)
 P.distances$V4 = paste(P.distances$V1, P.distances$V2, sep = " ")
-P.distances$V5 = "Pathogenic"
+P.distances$V5 = "Pathogenic to Pathogenic"
 colnames(P.distances) = c("Query_variant", "Ref_variant", "Distance", "Query_Ref", "Diseased")
 P.distances$Query_protein_position = sapply(str_split(P.distances$Query_variant, " "), tail, n=1L) 
+mean(P.distances$Distance)
+sd(P.distances$Distance)
 
 B.distances = read.csv("Structures/Phyre_SCN5A_aligned_with_Phyre_SCN2A.prb.B_LB_distance_calculated_out", sep = ",", header = FALSE, stringsAsFactors = FALSE)
 B.distances$V4 = paste(B.distances$V1, B.distances$V2, sep = " ")
-B.distances$V5 = "Benign"
+B.distances$V5 = "Benign to Pathogenic"
 colnames(B.distances) = c("Query_variant", "Ref_variant", "Distance", "Query_Ref", "Diseased")
 B.distances$Query_protein_position = sapply(str_split(B.distances$Query_variant, " "), tail, n=1L) 
+mean(B.distances$Distance)
+sd(B.distances$Distance)
 
 All.distances = rbind(P.distances, B.distances)
 
@@ -320,17 +352,32 @@ for (i in files){
 
 SCN5A_p.Unique_variant_gene_annotations = sort(unique(p.Unique_variant_gene_annotations[p.Unique_variant_gene_annotations$Gene == "SCN5A","Protein_position.x"]))
 Not_annotated = P.distances[!(P.distances$Query_protein_position %in% SCN5A_p.Unique_variant_gene_annotations),]
-Not_annotated$Diseased = "Pathogenic (missed by PA)"
+Not_annotated$Diseased = "Pathogenic to Pathogenic\n(removed previously annotated)"
 All.distances = rbind(All.distances, Not_annotated)
-All.distances$Diseased = factor(All.distances$Diseased, levels = c("Benign", "Pathogenic", "Pathogenic (missed by PA)"))
+All.distances$Diseased = factor(All.distances$Diseased, levels = c("Benign to Pathogenic", "Pathogenic to Pathogenic", "Pathogenic to Pathogenic\n(removed previously annotated)"))
 
 plot = ggplot(All.distances, aes(x=Diseased, y=Distance, color=Diseased)) + 
   # geom_violin(trim = FALSE, scale = "count") + 
   # geom_boxplot() +
   # scale_fill_manual(values = c("P/LP"="#F8CECC", "B/LB"="#D5E8D4")) +
-  scale_color_manual(values = c("Pathogenic"="#B85450", "Benign"="#82B366", "Pathogenic (missed by PA)" = "#0084ff")) +
-  geom_jitter(width = 0.2, alpha = 0.5) + theme(axis.text.x=element_blank(), axis.ticks = element_blank()) + ylab("Distance (Angstrom)") +xlab("Variants") + theme(legend.title = element_blank())
-ggsave("images/Closest_variant_annotation.png")
+  scale_color_manual(values = c("Pathogenic to Pathogenic"="#B85450", "Benign to Pathogenic"="#82B366", "Pathogenic to Pathogenic\n(removed previously annotated)" = "#0084ff")) +
+  geom_jitter(width = 0.2, alpha = 0.5) + 
+  ylab("Distance (Angstroms)") +xlab("Variants") +
+  theme(legend.title = element_blank(),
+        legend.key.size = unit(3,"line"),
+        # legend.position = c(0.77,0.89),
+        legend.text = element_text(size=14),
+        axis.text = element_text(size=14),
+        # axis.text.x = element_text(colour = "black", angle=20, hjust = 0.5),
+        axis.text.x = element_blank(),
+        axis.title.y = element_text(size=20),
+        axis.title.x = element_text(size=20),
+        axis.ticks = element_blank()) +
+  guides(color = guide_legend(override.aes = list(size = 3))) +
+  stat_summary(mapping = aes(x=Diseased, y=Distance), fun.y = median, fun.ymin = median, fun.ymax = median, geom = "crossbar", width = 0.5, color = "black", fatten = 0.5) + 
+  stat_summary(mapping = aes(x=Diseased, y=Distance), fun.y = function(z){quantile(z,0.25)}, fun.ymin = function(z){quantile(z,0.25)}, fun.ymax = function(z){quantile(z,0.25)}, geom = "crossbar", width = 0.2, color = "black", fatten = 0.5) +
+  stat_summary(mapping = aes(x=Diseased, y=Distance), fun.y = function(z){quantile(z,0.75)}, fun.ymin = function(z){quantile(z,0.75)}, fun.ymax = function(z){quantile(z,0.75)}, geom = "crossbar", width = 0.2, color = "black", fatten = 0.5)
+ggsave("images/Closest_variant_annotation.png", width = 7)
 ```
 
 

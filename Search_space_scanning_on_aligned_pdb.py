@@ -2,10 +2,10 @@ import os, sys, subprocess, re, math
 import numpy as np
 from scipy import spatial, stats
 
-# Run in termal as "python Search_space_scanning_on_aligned_pdb.py ../Pfams/Pfam_meta_domains/data/clinvar/clinvar_20190114/clinvar_20190114_GRCh37_onlyPathogenic_and_Likely_pathogenic.out_no_plugin_tableized_for_pfam_analysis clinvar_20201114_GRCh37_onlyBenign_and_Likely_benign_SCN5A.out_no_plugin_tableized_for_pfam_analysis SCN5A SCN2A Structures/Phyre_SCN5A_aligned_with_Phyre_SCN2A.prb.pdb SCN5A SCN2A"
+# Run in termal as "python Search_space_scanning_on_aligned_pdb.py ../Pfams/Pfam_meta_domains/data/clinvar/clinvar_20190114/clinvar_20190114_GRCh37_onlyPathogenic_and_Likely_pathogenic.out_no_plugin_tableized_for_pfam_analysis SCN5A_gnomad.exomes.r2.1.1.sites_split06_only_var_info.out_paraloc_tableized_for_pfam_analysis SCN5A SCN2A Structures/Phyre_SCN5A_aligned_with_Phyre_SCN2A.prb.pdb SCN5A SCN2A"
 
 tableized_file = sys.argv[1] #tableized clinvar P/LP file e.g. "../Pfams/Pfam_meta_domains/data/clinvar/clinvar_20190114/clinvar_20190114_GRCh37_onlyPathogenic_and_Likely_pathogenic.out_no_plugin_tableized_for_pfam_analysis"
-benign_tableized_file = sys.argv[2] #e.g. clinvar_20201114_GRCh37_onlyBenign_and_Likely_benign_SCN5A.out_no_plugin_tableized_for_pfam_analysis
+benign_tableized_file = sys.argv[2] #e.g. clinvar_20201114_GRCh37_onlyBenign_and_Likely_benign_SCN5A.out_no_plugin_tableized_for_pfam_analysis or SCN5A_gnomad.exomes.r2.1.1.sites_split06_only_var_info.out_paraloc_tableized_for_pfam_analysis
 query_gene = sys.argv[3] #gene1 to filter for e.g. "SCN5A"
 ref_gene = sys.argv[4] #gene2 to filter for e.g. "SCN2A"
 aligned_pdb = sys.argv[5] #TM-align pdb file e.g. "Structures/Phyre_SCN5A_aligned_with_Phyre_SCN2A.prb.pdb"
@@ -116,12 +116,21 @@ print("P/LP "+query_gene+" variants")
 for residue in query_pdb_coord_array:
 	# print(residue)
 	distance = spatial.KDTree(ref_pdb_coord_array).query(residue)[0]
-	print(query_pdb_dict[tuple(residue)], ref_pdb_dict[tuple(ref_pdb_coord_array[spatial.KDTree(ref_pdb_coord_array).query(residue)[1]])], distance)
+	# print(query_pdb_dict[tuple(residue)], ref_pdb_dict[tuple(ref_pdb_coord_array[spatial.KDTree(ref_pdb_coord_array).query(residue)[1]])], distance)
 	p_distance_list.append(distance)
 	output_file.write(str(query_pdb_dict[tuple(residue)])+","+str(ref_pdb_dict[tuple(ref_pdb_coord_array[spatial.KDTree(ref_pdb_coord_array).query(residue)[1]])])+","+str(distance)+"\n")
 p_RMSD = math.sqrt(np.mean([i ** 2 for i in p_distance_list]))
 print(np.mean(p_distance_list), np.std(p_distance_list), p_RMSD)
 output_file.close()
+p_3nn_distance_list = []
+for residue in query_pdb_coord_array:
+	# print(residue)
+	distance = spatial.KDTree(ref_pdb_coord_array).query(residue,3)[0]
+	# print(distance)
+	p_3nn_distance_list.append(np.mean(distance))
+p3_RMSD = math.sqrt(np.mean([i ** 2 for i in p_3nn_distance_list]))
+print(np.mean(p_3nn_distance_list), np.std(p_3nn_distance_list), p3_RMSD)
+
 
 output_file = open(aligned_pdb.rsplit(".", 1)[0]+".B_LB_distance_calculated_out" ,"w")
 
@@ -129,12 +138,20 @@ b_distance_list = []
 print("B/LB "+query_gene+" variants")
 for residue in benign_query_pdb_coord_array:
 	distance = spatial.KDTree(ref_pdb_coord_array).query(residue)[0]
-	print(benign_query_pdb_dict[tuple(residue)], ref_pdb_dict[tuple(ref_pdb_coord_array[spatial.KDTree(ref_pdb_coord_array).query(residue)[1]])], distance)
+	# print(benign_query_pdb_dict[tuple(residue)], ref_pdb_dict[tuple(ref_pdb_coord_array[spatial.KDTree(ref_pdb_coord_array).query(residue)[1]])], distance)
 	b_distance_list.append(distance)
 	output_file.write(str(benign_query_pdb_dict[tuple(residue)])+","+str(ref_pdb_dict[tuple(ref_pdb_coord_array[spatial.KDTree(ref_pdb_coord_array).query(residue)[1]])])+","+str(distance)+"\n")
 b_RMSD = math.sqrt(np.mean([i ** 2 for i in b_distance_list]))
 print(np.mean(b_distance_list), np.std(b_distance_list), b_RMSD)
 output_file.close()
+b_3nn_distance_list = []
+for residue in benign_query_pdb_coord_array:
+	# print(residue)
+	distance = spatial.KDTree(ref_pdb_coord_array).query(residue,3)[0]
+	# print(distance)
+	b_3nn_distance_list.append(np.mean(distance))
+b3_RMSD = math.sqrt(np.mean([i ** 2 for i in b_3nn_distance_list]))
+print(np.mean(b_3nn_distance_list), np.std(b_3nn_distance_list), b3_RMSD)
 
 print(stats.ks_2samp(p_distance_list, b_distance_list))
 print(stats.ttest_ind(p_distance_list, b_distance_list, equal_var = False))
