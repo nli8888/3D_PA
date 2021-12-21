@@ -36,7 +36,7 @@ if(length(new.packages)) install.packages(new.packages, repos = "https://cran.ma
 lapply(Packages, library, character.only = TRUE)
 if (!requireNamespace("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
-bioconductor_Packages = c("biomaRt", "clusterProfiler", "org.Hs.eg.db")
+bioconductor_Packages = c("biomaRt", "org.Hs.eg.db")
 new.packages = bioconductor_Packages[!(bioconductor_Packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) BiocManager::install(new.packages)
 lapply(bioconductor_Packages, library, character.only = TRUE)
@@ -308,7 +308,15 @@ plot = ggplot(stats, aes(x=Year)) +
 ggsave("images/PDB_stats.png")
 ```
 
+## Counting unique variant locations in protein for pymol
+```{r cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
+clinvar_P_LP_tableized_for_pfam_analysis = read.csv(file="/media/nick/821ED5711ED55F2B/Users/Nick/Documents/PhD/Pfams/Pfam_meta_domains/data/clinvar/clinvar_20190114/clinvar_20190114_GRCh37_onlyPathogenic_and_Likely_pathogenic.out_no_plugin_tableized_for_pfam_analysis", sep = "\t", header=TRUE, stringsAsFactors=FALSE)
+SCN5A_unique_variant_pos = unique(clinvar_P_LP_tableized_for_pfam_analysis[clinvar_P_LP_tableized_for_pfam_analysis$SYMBOL == "SCN5A","Protein_position"])
+length(SCN5A_unique_variant_pos)
+SCN2A_unique_variant_pos = unique(clinvar_P_LP_tableized_for_pfam_analysis[clinvar_P_LP_tableized_for_pfam_analysis$SYMBOL == "SCN2A","Protein_position"])
+length(SCN2A_unique_variant_pos)
 
+```
 
 ## Analyzing distances between closest points
 ```{r cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE, include=FALSE}
@@ -366,7 +374,7 @@ plot = ggplot(All.distances, aes(x=Diseased, y=Distance, color=Diseased)) +
   theme(legend.title = element_blank(),
         legend.key.size = unit(3,"line"),
         # legend.position = c(0.77,0.89),
-        legend.text = element_text(size=14),
+        legend.text = element_text(size=12),
         axis.text = element_text(size=14),
         # axis.text.x = element_text(colour = "black", angle=20, hjust = 0.5),
         axis.text.x = element_blank(),
@@ -377,7 +385,7 @@ plot = ggplot(All.distances, aes(x=Diseased, y=Distance, color=Diseased)) +
   stat_summary(mapping = aes(x=Diseased, y=Distance), fun.y = median, fun.ymin = median, fun.ymax = median, geom = "crossbar", width = 0.5, color = "black", fatten = 0.5) + 
   stat_summary(mapping = aes(x=Diseased, y=Distance), fun.y = function(z){quantile(z,0.25)}, fun.ymin = function(z){quantile(z,0.25)}, fun.ymax = function(z){quantile(z,0.25)}, geom = "crossbar", width = 0.2, color = "black", fatten = 0.5) +
   stat_summary(mapping = aes(x=Diseased, y=Distance), fun.y = function(z){quantile(z,0.75)}, fun.ymin = function(z){quantile(z,0.75)}, fun.ymax = function(z){quantile(z,0.75)}, geom = "crossbar", width = 0.2, color = "black", fatten = 0.5)
-ggsave("images/Closest_variant_annotation.png", width = 7)
+ggsave("images/Closest_variant_annotation.png", width = 8)
 ```
 
 
