@@ -386,6 +386,10 @@ plot = ggplot(All.distances, aes(x=Diseased, y=Distance, color=Diseased)) +
   stat_summary(mapping = aes(x=Diseased, y=Distance), fun.y = function(z){quantile(z,0.25)}, fun.ymin = function(z){quantile(z,0.25)}, fun.ymax = function(z){quantile(z,0.25)}, geom = "crossbar", width = 0.2, color = "black", fatten = 0.5) +
   stat_summary(mapping = aes(x=Diseased, y=Distance), fun.y = function(z){quantile(z,0.75)}, fun.ymin = function(z){quantile(z,0.75)}, fun.ymax = function(z){quantile(z,0.75)}, geom = "crossbar", width = 0.2, color = "black", fatten = 0.5)
 ggsave("images/Closest_variant_annotation.png", width = 8)
+
+
+ks = ks.test(P.distances$Distance, B.distances$Distance)
+ks2 = ks.test(Not_annotated$Distance, B.distances$Distance)
 ```
 
 
