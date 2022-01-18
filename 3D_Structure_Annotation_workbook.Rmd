@@ -360,10 +360,16 @@ for (i in files){
     p.Unique_input_variants = base::rbind(p.Unique_input_variants, dplyr::setdiff(Total_annotations$input_variants, p.Unique_input_variants))
   }
 }
-
 SCN5A_p.Unique_variant_gene_annotations = sort(unique(p.Unique_variant_gene_annotations[p.Unique_variant_gene_annotations$Gene == "SCN5A","Protein_position.x"]))
+
+#### Paralogues ####
+load("clinvar_20190114_GRCh37_onlyPathogenic_and_Likely_pathogenic_ParalogueAnnotated.Rdata") #saved prev p.paralogous_var_align object from Paralogue Annotation so don't have run the whole thing again and can just load this object
+SCN5A_p.Unique_variant_gene_annotations2 = p.paralogous_var_align$Left_joined_gathered_paralog_data[p.paralogous_var_align$Left_joined_gathered_paralog_data$Gene == "SCN5A" & !is.na(p.paralogous_var_align$Left_joined_gathered_paralog_data$ID.y), "Protein_position.x"]
+
 Not_annotated = P.distances[!(P.distances$Query_protein_position %in% SCN5A_p.Unique_variant_gene_annotations),]
+Not_annotated = Not_annotated[!(Not_annotated$Query_protein_position %in% SCN5A_p.Unique_variant_gene_annotations2),]
 Not_annotated$Diseased = "Pathogenic to Pathogenic\n(removed previously annotated)"
+
 All.distances = rbind(All.distances, Not_annotated)
 All.distances$Diseased = factor(All.distances$Diseased, levels = c("Benign to Pathogenic", "Pathogenic to Pathogenic", "Pathogenic to Pathogenic\n(removed previously annotated)"))
 
