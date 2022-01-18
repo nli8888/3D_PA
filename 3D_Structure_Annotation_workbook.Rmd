@@ -20,7 +20,7 @@ always_allow_html: yes
 <!--Load Packages and function-->
 <!-- ```{r echo=FALSE, message=FALSE, warning=FALSE, include=FALSE, results='hide'} -->
 ```{r echo=FALSE, message=FALSE, warning=FALSE, results='hide',include=FALSE}
-Packages = c("tidyverse", "plyr", "dplyr", "httr", "jsonlite","XML")
+Packages = c("tidyverse", "plyr", "dplyr", "httr", "jsonlite","XML","moments")
 new.packages = Packages[!(Packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages, repos = "https://cran.ma.imperial.ac.uk/")
 # lapply(Packages, library, character.only = TRUE)
@@ -30,6 +30,7 @@ library("tidyverse")
 library("httr")
 library("jsonlite")
 library("XML")
+library("moments")
 Packages = c("ggplot2", "ggsignif", "knitr", "png", "grid", "tinytex", "pander", "kableExtra", "DiagrammeR")
 new.packages = Packages[!(Packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages, repos = "https://cran.ma.imperial.ac.uk/")
@@ -327,6 +328,7 @@ colnames(P.distances) = c("Query_variant", "Ref_variant", "Distance", "Query_Ref
 P.distances$Query_protein_position = sapply(str_split(P.distances$Query_variant, " "), tail, n=1L) 
 mean(P.distances$Distance)
 sd(P.distances$Distance)
+skewness(P.distances$Distance)
 
 B.distances = read.csv("Structures/Phyre_SCN5A_aligned_with_Phyre_SCN2A.prb.B_LB_distance_calculated_out", sep = ",", header = FALSE, stringsAsFactors = FALSE)
 B.distances$V4 = paste(B.distances$V1, B.distances$V2, sep = " ")
@@ -335,6 +337,7 @@ colnames(B.distances) = c("Query_variant", "Ref_variant", "Distance", "Query_Ref
 B.distances$Query_protein_position = sapply(str_split(B.distances$Query_variant, " "), tail, n=1L) 
 mean(B.distances$Distance)
 sd(B.distances$Distance)
+skewness(B.distances$Distance)
 
 All.distances = rbind(P.distances, B.distances)
 
